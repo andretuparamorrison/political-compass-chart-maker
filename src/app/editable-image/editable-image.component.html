@@ -1,0 +1,28 @@
+<div class="container">
+    <ng-container *ngIf="imageFormGroup.enabled">
+        <img class="image" [src]="imageFormGroup.value.src" [ngStyle]="imageStyle"/>
+        <div class="overlay">
+            <img src="assets/delete.svg" (click)="clear()">
+        </div>
+    </ng-container>
+    <ng-container *ngIf="imageFormGroup.disabled">
+        <div>No image</div>
+        <div class="overlay">
+            <img src="assets/add.svg" (click)="add()">
+        </div>
+    </ng-container>
+</div>
+<form *ngIf="imageFormGroup && imageFormGroup.enabled" class="settings" [formGroup]="imageFormGroup">
+    <div class="setting">
+        <label>Scroll X:</label>
+        <input type="range" min="-100" max="100" formControlName="scrollX">
+    </div>
+    <div class="setting">
+        <label>Scroll Y:</label>
+        <input type="range" min="-100" max="100" formControlName="scrollY">
+    </div>
+    <div class="setting">
+        <label>Zoom:</label>
+        <input type="range" min="10" max="50" formControlName="zoom">
+    </div>
+</form>

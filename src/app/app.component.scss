@@ -1,0 +1,160 @@
+* {
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid black;
+    height: 600px;
+    width: 550px;
+    background-image: url("https://upload.wikimedia.org/wikipedia/commons/6/64/Political_Compass_standard_model.svg");
+    background-size: cover;
+}
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    margin-left: 50px;
+    width: 500px;
+    height: 100px;
+}
+
+.point {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    height: 32px;
+    width: 32px;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 100%;
+    transition: transform 0.2s;
+
+    &:hover {
+        transform: translate(-50%, -50%) scale(1.5);
+
+        .point-name {
+            visibility: visible;
+        }
+    }
+
+    &--new {
+        @extend .point;
+
+        &:hover {
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    .point-name {
+        position: absolute;
+        transform: translate(-50%, calc(-100% - 3px));
+        top: 0;
+        left: 50%;
+        pointer-events: none;
+        text-align: center;
+        white-space: nowrap;
+        visibility: hidden;
+
+        &--show {
+            visibility: visible;
+        }
+    }
+
+    &--selected {
+        border: 3px solid dodgerblue;
+        .point-name {
+            visibility: visible;
+            font-weight: bold
+        }
+    }
+
+    .image-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        border-radius: 100%;
+    }
+
+    img {
+        height: 100%;
+        min-height: 100%;
+        object-fit: cover;
+    }
+}
+
+.point:hover > .point-name {
+    visibility: visible;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 500px;
+
+    button {
+        margin-right: 10px;
+
+        &:last-child {
+            margin-right: 0;
+        }
+    }
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+.selected-point-form {
+
+    label {
+        display: block;
+        width: 120px;
+        font-weight: bold;
+        height: 20px;
+        margin-bottom: 4px;
+    }
+
+    input, span {
+        display: block;
+        width: 350px;
+        box-sizing: border-box;
+        height: 20px;
+        margin-bottom: 4px;
+    }
+
+    span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1.2;
+    }
+}
+
+.image-preview-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    width: 100px;
+    overflow: hidden;
+    border-radius: 100%;
+}
+
+.image-preview {
+    height: 100%;
+    min-height: 100%;
+    object-fit: cover;
+}
