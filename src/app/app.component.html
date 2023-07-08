@@ -1,59 +1,77 @@
 <div class="container">
-  <div #chart (click)="chartClick($event)" class="chart" >
-    <div [hidden]="!newPoint && !movePoint" class="point--new" [ngStyle]="newPointPositionStyle">
+  <div #chart (click)="chartClick($event)" class="chart unselectable mx-20" >
+    <img class="political-compass-bg" src="https://upload.wikimedia.org/wikipedia/commons/6/64/Political_Compass_standard_model.svg" />
+    <div [hidden]="!newPointMode && !movePointMode" class="point--new" [ngStyle]="getPointStyle(newPointPlaceholder)">
       <span class="point-name">{{selectedPoint?.name ?? 'New point'}}</span>
       <div class="image-container" *ngIf="selectedPoint && selectedPoint.image">
-        <img [src]="selectedPoint.image.src" [ngStyle]="getImageStyle(selectedPoint.image, 32)">
+        <img [src]="selectedPoint.image.src" 
+          [ngStyle]="getImageStyle(selectedPoint.image, 32)"
+          draggable="false" />
       </div>
     </div>
     <div *ngFor="let point of points; index as i" 
       class="point" 
       [ngClass]="{'point--selected': point === selectedPoint}"
-      [ngStyle]="point.pointStyle" 
+      [ngStyle]="getPointStyle(point)" 
       (click)="pointClick(i)"
     >
       <span class="point-name" [ngClass]="{'point-name--show': showPointNames}">{{point.name}}</span>
       <div class="image-container">
-        <img *ngIf="point.image" [src]="point.image.src" [ngStyle]="getImageStyle(point.image, 32)">
+        <img *ngIf="point.image" 
+          [src]="point.image.src" 
+          [ngStyle]="getImageStyle(point.image, 32)"
+          draggable="false" />
       </div>
     </div>
   </div>
-  <div class="menu">
-    <button (click)="toggleNewPointMode()" class="mb-10">{{newPoint ? 'Cancel' : 'New point' }}</button>
-    <button (click)="toggleShowPointNames()" class="mb-10">{{showPointNames ? 'Hide names' : 'Show names' }}</button>
-    <div *ngIf="selectedPoint && !editPoint" class="selected-point-form mb-10">
-      <label>Name:</label>
-      <span>{{selectedPoint.name}}</span>
+  <div class="menu mx-20">
+    <h1 class="mb-50">Political Compass Chart Maker</h1>
+    <div class="flex--center--center dmb-10">
+      <button (click)="newChart()" [ngClass]="{'mr-5': chartIds.length}">New chart</button>
+      <select *ngIf="chartIds.length" [formControl]="loadFormControl" class="mr-5">
+        <option *ngFor="let chartId of chartIds" [value]="chartId">{{chartId}}</option>
+      </select>
+      <button *ngIf="loadFormControl.value" (click)="loadClicked()" class="mr-5">Load</button>
+      <button *ngIf="loadFormControl.value" (click)="deleteClicked()">Delete</button>
+    </div>
+    <div *ngIf="loadedChartId" class="chart-controls">
+      <h2>{{loadedChartId}}</h2>
+      <button (click)="toggleNewPointMode()" class="mb-10">{{newPointMode ? 'Cancel' : 'New point' }}</button>
+      <button (click)="toggleShowPointNames()" class="mb-10">{{showPointNames ? 'Hide names' : 'Show names' }}</button>
+      <div *ngIf="selectedPoint && !editPointMode" class="selected-point-form mb-10">
+        <label>Name:</label>
+        <span>{{selectedPoint.name}}</span>
 
-      <label>Image:</label>
-      <div *ngIf="selectedPoint.image" class="image-preview-container">
-        <img class="image-preview" [src]="selectedPoint.image.src" [ngStyle]="getImageStyle(selectedPoint.image, 100)">
+        <label>Image:</label>
+        <div *ngIf="selectedPoint.image" class="image-preview-container">
+          <img class="image-preview" [src]="selectedPoint.image.src" [ngStyle]="getImageStyle(selectedPoint.image, 100)">
+        </div>
+        <span *ngIf="!selectedPoint.image">N/A</span>
       </div>
-      <span *ngIf="!selectedPoint.image">N/A</span>
-    </div>
-    <form [formGroup]="editForm" 
-      *ngIf="selectedPoint && editPoint" 
-      class="selected-point-form mb-10"
-      (keyup.enter)="saveEdit()"
-    >
-      <label>Name:</label>
-      <input formControlName="name"/>
+      <form [formGroup]="editForm" 
+        *ngIf="selectedPoint && editPointMode" 
+        class="selected-point-form mb-10"
+        (keyup.enter)="saveEdit()"
+      >
+        <label>Name:</label>
+        <input formControlName="name"/>
 
-      <label>Image:</label>
-      <app-editable-image [imageFormGroup]="editFormImageGroup"></app-editable-image>
-    </form>
-    <div *ngIf="selectedPoint && !movePoint && !editPoint" class="action-buttons">
-      <button (click)="deleteSelectedPoint()">Delete</button>
-      <button (click)="editSelectedPoint()">Edit</button>
-      <button (click)="moveSelectedPoint()">Move</button>
-      <button (click)="selectedPoint = undefined">Cancel</button>
-    </div>
-    <div *ngIf="selectedPoint && movePoint" class="action-buttons">
-      <button (click)="cancelMove()">Cancel</button>
-    </div>
-    <div *ngIf="selectedPoint && editPoint" class="action-buttons">
-      <button (click)="saveEdit()">Save</button>
-      <button (click)="cancelEdit()">Cancel</button>
+        <label>Image:</label>
+        <app-editable-image [imageFormGroup]="editFormImageGroup"></app-editable-image>
+      </form>
+      <div *ngIf="selectedPoint && !movePointMode && !editPointMode" class="action-buttons">
+        <button (click)="deleteSelectedPoint()">Delete</button>
+        <button (click)="editSelectedPoint()">Edit</button>
+        <button (click)="moveSelectedPoint()">Move</button>
+        <button (click)="selectedPoint = undefined">Cancel</button>
+      </div>
+      <div *ngIf="selectedPoint && movePointMode" class="action-buttons">
+        <button (click)="cancelMove()">Cancel</button>
+      </div>
+      <div *ngIf="selectedPoint && editPointMode" class="action-buttons">
+        <button (click)="saveEdit()">Save</button>
+        <button (click)="cancelEdit()">Cancel</button>
+      </div>
     </div>
   </div>
 </div>

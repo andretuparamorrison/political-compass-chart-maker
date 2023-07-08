@@ -1,1 +1,60 @@
 /* You can add global styles to this file, and also import other style files */
+@import './variables';
+
+body, html {
+    margin: 0;
+    padding: 0;
+}
+
+body, html, input {
+    font-size: 16px;
+}
+
+input {
+    border-radius: 5px;
+}
+
+button {
+    display: block;
+}
+
+* {
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+// Utility classes
+
+.flex {
+    display: flex;
+
+    &--center {
+        @extend .flex;
+        align-items: center;
+
+        &--center {
+            @extend .flex--center;
+            justify-content: center;
+        }
+    }
+}
+
+.mx-20 {
+    margin: 0 20px;
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+.mb-50 {
+    margin-bottom: 50px;
+}
+
+.mr-5 {
+    margin-right: 5px;
+}
+
+.unselectable {
+    -webkit-user-select: none; /* Safari */
+    user-select: none;
+}

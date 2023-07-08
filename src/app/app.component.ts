@@ -3,7 +3,9 @@ import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { EditableImage } from './editable-image/editable-image.model';
 import { getImageStyle } from './editable-image/editable-image.helper';
 
-const LOCAL_STORAGE_KEY = "political-compass-chart-points";
+const CHART_IDS_KEY = "political-compass-chart-ids" as const;
+const LAST_SELECTED_ID_KEY = "political-compass-chart-last-selected-id" as const;
+const POINTS_KEY_PREFIX = "political-compass-chart-points/" as const;
 
 @Component({
   selector: 'app-root',
@@ -16,6 +18,8 @@ export class AppComponent implements OnInit {
 
   mouseX = 0;
   mouseY = 0;
+
+  loadFormControl = this.fb.control(null as string | null);
 
   editForm = this.fb.nonNullable.group({
     name: "",
@@ -35,16 +39,21 @@ export class AppComponent implements OnInit {
     }>;
   }
 
-  editPoint: boolean = false;
-  movePoint: boolean = false;
-  newPoint: boolean = false;
+  newPointPlaceholder: Point = {
+    image: null,
+    name: "New point",
+    visibility: "hidden",
+    x: 0,
+    y: 0,
+  };
+
+  editPointMode: boolean = false;
+  movePointMode: boolean = false;
+  newPointMode: boolean = false;
   showPointNames: boolean = false;
 
-  newPointPositionStyle: PointStyle = {
-    left: "0",
-    top: "0",
-    visibility: "hidden",
-  };
+  chartIds: string[] = [];
+  loadedChartId?: string; 
 
   points: Point[] = [];
   selectedPoint?: Point;
@@ -52,10 +61,84 @@ export class AppComponent implements OnInit {
   constructor(private fb: FormBuilder) {}
 
   ngOnInit(): void {
-    const storedPoints = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedPoints != null) {
-      this.points = JSON.parse(storedPoints);
+    this.loadSavedData();
+  }
+
+  loadSavedData() {
+    const chartIds = localStorage.getItem(CHART_IDS_KEY);
+    if (!chartIds) {
+      return;
     }
+    this.chartIds = JSON.parse(chartIds);
+    const lastSelectedId = localStorage.getItem(LAST_SELECTED_ID_KEY);
+    if (!lastSelectedId) {
+      return;
+    }
+    this.loadChart(lastSelectedId);
+  }
+
+  newChart() {
+    let name: string | null = null;
+    do {
+      name = prompt("Please specify a name: ");
+      if (!name) {
+        return;
+      }
+    } while (this.chartIds.includes(name));
+    this.updateLocalStorage();
+    this.chartIds.push(name);
+    this.loadedChartId = name;
+    this.loadFormControl.setValue(name);
+    this.points = [];
+    this.updateLocalStorage();
+  }
+
+  deleteClicked() {
+    const selectedChartId = this.loadFormControl.value;
+    if (!selectedChartId) {
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete "${selectedChartId}"?`)) {
+      return;
+    }
+    this.deleteChart(selectedChartId);
+  }
+
+  deleteChart(chartId: string) {
+    const chartIndex = this.chartIds.indexOf(chartId);
+    if (chartIndex === -1) {
+      return;
+    }
+    this.chartIds.splice(chartIndex, 1);
+    if (chartId === this.loadedChartId) {
+      this.loadedChartId = this.chartIds.at(0);
+    }
+    if (this.loadedChartId) {
+      this.loadFormControl.setValue(this.loadedChartId);
+    }
+    this.updateLocalStorage();
+  }
+
+  loadClicked() {
+    const selectedChartId = this.loadFormControl.value;
+    if (selectedChartId) {
+      this.loadChart(selectedChartId);
+    }
+  }
+
+  loadChart(chartId: string) {
+    const points = localStorage.getItem(POINTS_KEY_PREFIX + chartId);
+    if (!points) {
+      this.deleteChart(chartId);
+      if (this.chartIds.length) {
+        this.loadChart(this.chartIds[0]);
+      }
+      return;
+    }
+    this.points = JSON.parse(points);
+    this.loadedChartId = chartId;
+    this.loadFormControl.setValue(chartId);
+    localStorage.setItem(LAST_SELECTED_ID_KEY, this.loadedChartId);
   }
 
   @HostListener("document:mousemove", ["$event"])
@@ -72,8 +155,16 @@ export class AppComponent implements OnInit {
     return getImageStyle(image, containerWidth);
   }
 
+  getPointStyle(point: Point) {
+    return {
+      left: 100*point.x + "%",
+      top: 100*point.y + "%",
+      visibility: point.visibility,
+    };
+  }
+
   pointClick(index: number) {
-    if (this.newPoint) {
+    if (this.newPointMode) {
       return;
     }
     this.selectedPoint = this.points[index];
@@ -97,7 +188,7 @@ export class AppComponent implements OnInit {
     if (!this.selectedPoint) {
       return;
     }
-    this.editPoint = true;
+    this.editPointMode = true;
     this.editForm.patchValue({
       name: this.selectedPoint.name
     });
@@ -115,11 +206,11 @@ export class AppComponent implements OnInit {
   }
 
   cancelEdit() {
-    this.editPoint = false;
+    this.editPointMode = false;
   }
 
   saveEdit() {
-    this.editPoint = false;
+    this.editPointMode = false;
     if (!this.selectedPoint) {
       return;
     }
@@ -133,7 +224,7 @@ export class AppComponent implements OnInit {
     if (!this.selectedPoint) {
       return;
     }
-    this.movePoint = true;
+    this.movePointMode = true;
     // Hold on to selected point while we delete it from the list
     const selectedPoint = this.selectedPoint;
     this.deleteSelectedPoint();
@@ -141,11 +232,11 @@ export class AppComponent implements OnInit {
   }
 
   cancelMove() {
-    if (!this.selectedPoint || !this.movePoint) {
+    if (!this.selectedPoint || !this.movePointMode) {
       return;
     }
     this.points.push(this.selectedPoint);
-    this.movePoint = false;
+    this.movePointMode = false;
   }
 
   updatePointerPosition() {
@@ -157,22 +248,11 @@ export class AppComponent implements OnInit {
       this.mouseY < chartPosition.y ||
       this.mouseY > chartPosition.y + chartSize.height
     ) {
-      this.newPointPositionStyle = {
-        left: "0",
-        top: "0",
-        visibility: "hidden",        
-      }
+      this.newPointPlaceholder.visibility = "hidden";
       return;
     }
 
-    const left = this.mouseX - chartPosition.x;
-    const top = this.mouseY - chartPosition.y;
-    
-    this.newPointPositionStyle = {
-      left: left + "px",
-      top: top + "px",
-      visibility: "visible",        
-    };
+    this.setPointPositionToMouse(this.newPointPlaceholder);
   }
 
   getChartPosition() {
@@ -191,19 +271,27 @@ export class AppComponent implements OnInit {
     return window.scrollX + element.getBoundingClientRect().left;
   }
 
+  getElDistToRight(element: HTMLElement) {
+    return window.scrollX + element.getBoundingClientRect().right;
+  }
+
   getElDistToTop(element: HTMLElement) {
     return window.scrollY + element.getBoundingClientRect().top;
   }
 
+  getElDistToBottom(element: HTMLElement) {
+    return window.scrollY + element.getBoundingClientRect().bottom;
+  }
+
   chartClick(e: MouseEvent) {
-    if (this.newPoint) {
+    if (this.newPointMode) {
       this.addNewPoint();
       return;
     }
-    if (this.movePoint && this.selectedPoint) {
+    if (this.movePointMode && this.selectedPoint) {
       this.addPointAtMousePos(this.selectedPoint);
       this.updateLocalStorage();
-      this.movePoint = false;
+      this.movePointMode = false;
       return;
     }
     if (e.target === this.chartElement.nativeElement) {
@@ -213,7 +301,7 @@ export class AppComponent implements OnInit {
 
   toggleNewPointMode() {
     this.selectedPoint = undefined;
-    this.newPoint = !this.newPoint;
+    this.newPointMode = !this.newPointMode;
   }
 
   toggleShowPointNames() {
@@ -221,50 +309,47 @@ export class AppComponent implements OnInit {
   }
 
   addNewPoint() {
-    const newPoint: Point = {
+    const newPointMode: Point = {
       name: "New point",
       image: null,
-      pointStyle: {
-        left: "0",
-        top: "0",
-        visibility: "hidden"
-      }
+      visibility: "hidden",
+      x: 0,
+      y: 0,
     };
-    this.addPointAtMousePos(newPoint);
+    this.addPointAtMousePos(newPointMode);
   }
 
   addPointAtMousePos(point: Point) {
-    const chartPosition = this.getChartPosition();
-
-    const left = this.mouseX - chartPosition.x;
-    const top = this.mouseY - chartPosition.y;
-
-    point.pointStyle = {
-      left: left + "px",
-      top: top + "px",
-      visibility: "visible"
-    };
+    this.setPointPositionToMouse(point);
 
     this.points.push(point);
     this.updateLocalStorage();
     this.selectedPoint = point;
 
-    this.newPoint = false;
+    this.newPointMode = false;
+  }
+
+  setPointPositionToMouse(point: Point) {
+    const chartPosition = this.getChartPosition();
+    const chartSize = this.getChartSize();
+    point.visibility = "visible";
+    point.x = (this.mouseX - chartPosition.x) / chartSize.width;
+    point.y = (this.mouseY - chartPosition.y) / chartSize.height;
   }
 
   updateLocalStorage() {    
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(this.points));
+    localStorage.setItem(CHART_IDS_KEY, JSON.stringify(this.chartIds));
+    if (this.loadedChartId) {
+      localStorage.setItem(LAST_SELECTED_ID_KEY, this.loadedChartId);
+      localStorage.setItem(POINTS_KEY_PREFIX + this.loadedChartId, JSON.stringify(this.points));
+    }
   }
 }
 
 interface Point {
   image: EditableImage | null;
   name: string;
-  pointStyle: PointStyle;
-}
-
-interface PointStyle {
-  left: string;
-  top: string;
   visibility: "hidden" | "visible";
+  x: number;
+  y: number;
 }
