@@ -13,7 +13,7 @@ jobs:
       - run: npm ci
       - run: npx build --output-path /tmp/dist
   deploy:
-    uses: andretuparamorrison/custom-github-actions/.github/workflows/home-server-deploy.yml
+    uses: andretuparamorrison/custom-github-actions/.github/workflows/home-server-deploy.yml@main
     with:
       DEPLOY_PATH: "C:/webroot/polcom"
       PACKAGE_PATH: "/tmp/dist"
