@@ -11,13 +11,18 @@ jobs:
         with:
           node-version: '18'
       - run: npm ci
-      - run: npm run build -- --output-path /tmp/dist
+      - run: npm run build -- --output-path /dist
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
   deploy:
     needs: build
     uses: andretuparamorrison/custom-github-actions/.github/workflows/home-server-deploy.yml@main
     with:
+      ARTIFACT_NAME: "dist"
       DEPLOY_PATH: "C:/webroot/polcom"
-      PACKAGE_PATH: "/tmp/dist"
     secrets:
       PRIVATE_KEY: ${{secrets.DESKTOP_G2A2RT2_PRIVATE_KEY}}
       SERVER_FINGERPRINT: ${{secrets.DESKTOP_G2A2RT2_FINGERPRINT}}
