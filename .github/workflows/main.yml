@@ -11,7 +11,7 @@ jobs:
         with:
           node-version: '18'
       - run: npm ci
-      - run: npm run build -- --output-path /dist
+      - run: npm run build -- --output-path dist
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
